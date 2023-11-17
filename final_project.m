@@ -29,10 +29,13 @@ logs_bw = h .* s;
 figure
 imshow(logs_bw, [])
 
-edge_img = edge(logs_bw, "canny", [0.6, 0.9], 1.5);
+edge_img = edge(logs_bw, "canny", [0.6, 0.9], 1.5); 
 
 figure
 imshow(edge_img, [])
+
+
+
 
 
 

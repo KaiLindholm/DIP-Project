@@ -39,7 +39,7 @@ edge_img = edge(logs_bw, "canny", [0.6, 0.9], 1.5);
 %%
 
 
-[c, r] = imfindcircles(edge_img, [100 250], ObjectPolarity="dark", Sensitivity=0.97);
+[c, r] = imfindcircles(edge_img, [100 250], ObjectPolarity="bright", Sensitivity=0.98);
 
 figure
 imshow(logs_bw, [])

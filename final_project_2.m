@@ -68,10 +68,21 @@ imshow(imgc)
 
 figure(5)
 
-hi_img = uint8(hi_img);
-overlay = hi_img .*b;
+% hi_img = uint8(hi_img);
+% overlay = hi_img .*b;
 
-imshow(overlay);
+imshow(hi_img)
+props = regionprops(hi_img, 'BoundingBox');
+for k = 1 : length(props)
+    thisBB = props(k).BoundingBox;
+    rectangle('Position', thisBB, 'EdgeColor', 'r', 'LineWidth', 2);
+end
+hold off;
+
+
+
+
+% imshow(overlay);
 
 figure(6)
 % mid_img = mid_img .* img;
@@ -86,12 +97,22 @@ imshow(mid_img)
 figure(7)
 
 imhist(r);
-
 figure(8)
 
-subplot(1,3,1); imshow(hue);
-subplot(1,3,2); imshow(s);
-subplot(1,3,3); imshow(v);
+% subplot(1,3,1); imshow(hue);
+% subplot(1,3,2); imshow(s);
+% subplot(1,3,3); imshow(v);
+
+s = s < 0.14;
+s = uint8(s);
+% s = regionprops(s, "BoundingBox");
+imshow(s)
+
+figure(9)
+
+both = s.*overlay;
+% 
+imshow(both);
 
 
 

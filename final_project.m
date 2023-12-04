@@ -1,4 +1,3 @@
-close all
 
 % RGB -> HSI
 % figure
@@ -10,9 +9,8 @@ hsv_logs = rgb2hsv(logs);
 figure
 h = hsv_logs(:,:,1);
 h = h < .10;
-
 h = bwareaopen(h, 10000);
-
+imshow(h, [])
 
 h = imfill(h, "holes");
 h = uint8(h);
@@ -43,6 +41,8 @@ subplot(1,2,1);
 imshow(logs_bw, [])
 subplot(1,2,2); 
 imshow(edge_img, [])
+
+
 %%
 
 [acc, T, R] = hough(edge_img, 'ThetaResolution', 0.75, 'RhoResolution', 0.75);
@@ -57,7 +57,7 @@ P = houghpeaks(acc, 15, 'Threshold', 0.25*max(acc(:)) );
 figure, 
 subplot(1,2,1); 
 radius = 105; 
-[y0detect,x0detect,acc] = circle_hough(edge_img, radius, 4);
+[y0detect, x0detect,acc] = circle_hough(edge_img, radius, 4);
 imshow(log(acc+1), [])
 
 % subplot(1,2,2); 
@@ -85,3 +85,19 @@ imshow(log(acc+1), [])
 % hold on
 % viscircles(centers,radii);
 % hold off
+
+%%
+
+I = imread('woodlogs_b.png');
+Rmin = 99; 
+Rmax = 142; 
+
+[centers, radii, metric] = imfindcircles(I, [Rmin Rmax], "EdgeThreshold", 0.6, "Sensitivity", 0.9);
+figure, 
+imshow(I, [])
+hold on; 
+viscircles(centers, radii)
+
+
+
+

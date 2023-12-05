@@ -2,6 +2,11 @@ img = imread("ptag_b.png");
 
 img_hsv = rgb2hsv(img);
 
+% w = watershed(img, 4);
+
+figure()
+% imshow(w, [])
+
 h = img_hsv(:,:,1);
 s = img_hsv(:,:,2);
 v = img_hsv(:,:,3);
@@ -9,6 +14,7 @@ v = img_hsv(:,:,3);
 img = rgb2gray(img);
 
 imgc = imread("ptag_b.png");
+
 
 figure(1)
 subplot(2,2,1); xlabel("grayscale");
@@ -35,14 +41,13 @@ impixelinfo
 
 figure(2)
 % img = histeq(img);
-img = b;
-imhist(img);
+imhist(b); xlabel('blue')
 % imshow(img); xlabel('histeq');
 
 
 figure(3)
 hi_img = b > 220 & b < 248;
-mid_img = r > 180 & r < 200;
+mid_img = r > 160 & r < 220 & g > 160 & g < 210 & b > 160 & b < 210;
 
 
 % hi_img = uint8(hi_img);
@@ -71,48 +76,70 @@ figure(5)
 % hi_img = uint8(hi_img);
 % overlay = hi_img .*b;
 
-imshow(hi_img)
-props = regionprops(hi_img, 'BoundingBox');
-for k = 1 : length(props)
-    thisBB = props(k).BoundingBox;
-    rectangle('Position', thisBB, 'EdgeColor', 'r', 'LineWidth', 2);
-end
-hold off;
+
+% impixelinfo
 
 
 
 
 % imshow(overlay);
+%%
 
 figure(6)
 % mid_img = mid_img .* img;
-imshow(mid_img)
+subplot(1,2,1); imshow(mid_img)
+f = fspecial("gaussian", [5 5], 5);
+mid_img = imfilter(mid_img, f, "same", "replicate");
+m = bwareaopen(mid_img, 500);
+mid_img = imfill(m, "holes");
+subplot(1,2,2); imshow(mid_img); xlabel('gray tags')
+%%
+figure(7)
+imshow(imgc);
+hold on
+% 75 pixels x 218
 
+props = regionprops(hi_img, 'BoundingBox');
+props2 = regionprops(mid_img, 'BoundingBox');
+for k = 1 : length(props)
+    thisBB = props(k).BoundingBox;
+
+    rectangle('Position', thisBB, 'EdgeColor', 'r', 'LineWidth', 2);
+end
+
+for j = 1 : length(props2)
+    thisBB = props2(j).BoundingBox;
+
+    rectangle('Position', thisBB, 'EdgeColor', 'g', 'LineWidth', 2);
+end
+hold off;
+
+%%
 % 
 % figure(5)
 % ptag = hi_img + mid_img;
 % 
 % imshow(ptag)
 
-figure(7)
-
-imhist(r);
-figure(8)
+% figure(7)
+% 
+% imhist(r);
+% figure(8)
 
 % subplot(1,3,1); imshow(hue);
 % subplot(1,3,2); imshow(s);
 % subplot(1,3,3); imshow(v);
 
-s = s < 0.14;
-s = uint8(s);
-% s = regionprops(s, "BoundingBox");
-imshow(s)
+% s = s < 0.14;
+% s = uint8(s);
+% % s = regionprops(s, "BoundingBox");
+% imshow(s)
 
-figure(9)
+% figure(9)
 
-both = s.*overlay;
+% both = s.*overlay;
 % 
-imshow(both);
+% imshow(both);
 
 
 

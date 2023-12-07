@@ -10,7 +10,7 @@ hsv = rgb2hsv(I);
 h = hsv(:,:,1);
 s = hsv(:,:,2);
 v = hsv(:,:,3);
-% 
+
 % figure("Name", "Input and its band")
 % subplot(2,3,1), imshow(R, []);
 % subplot(2,3,2), imshow(G, []);
@@ -19,7 +19,7 @@ v = hsv(:,:,3);
 % subplot(2,3,4), imshow(h, []);
 % subplot(2,3,5), imshow(s, []);
 % subplot(2,3,6), imshow(v, []);
-% 
+
 %% Find where the background pixels are located 
 backgroundThresh = 0.10; 
 
@@ -33,36 +33,108 @@ bgMask = imfill(bgMask, "holes");
 figure("Name", "Fill Holes in Mask")
 imshow(bgMask, [])
 
-%% Perform a median filter on s
+%% Filtering Step on 
 figure("Name", "Median filter of Saturation") 
-medS = s .* bgMask; 
-medS = imgaussfilt(medS, 5);
-medS = medfilt2(medS, [5 5]);
-medS = medS ./ max(medS(:));
+medS = v .* bgMask; 
+medS = imgaussfilt(medS, 1.5, "FilterSize", [5 5]);
+% medS = medS ./ max(medS(:));
 imshow(medS, [])
 
 figure("Name", "Saturation Histogram")
 subplot(1,2,1); imhist(medS, 20);
 subplot(1,2,2); imshow(medS, [])
 
+%% Morphological Techniques to mark foreground objects 
+close all; 
+input = histeq(medS);
+
+figure, 
+gmag = imgradient(input);
+imshow(gmag,[])
+title("Gradient Magnitude")
+
+figure, 
+se = strel("disk",25);
+Ie = imerode(input,se);
+Iobr = imreconstruct(Ie,input);
+imshow(Iobr)
+title("Opening-by-Reconstruction")
+
+figure, 
+Iobrd = imdilate(Iobr,se);
+Iobrcbr = imreconstruct(imcomplement(Iobrd),imcomplement(Iobr));
+Iobrcbr = imcomplement(Iobrcbr);
+imshow(Iobrcbr)
+title("Opening-Closing by Reconstruction")
+
+figure, 
+fgm = imregionalmax(Iobrcbr, 8);
+imshow(fgm)
+title("Regional Maxima of Opening-Closing by Reconstruction")
+
+
+figure, 
+I2 = labeloverlay(input,fgm);
+imshow(I2)
+title("Regional Maxima Superimposed on Original Image")
+%%
+se2 = strel(ones(11, 11));
+fgm2 = imclose(fgm,se2);
+fgm3 = imerode(fgm2,se2);
+
+figure, 
+fgm4 = bwareaopen(fgm3,90);
+I3 = labeloverlay(input,fgm4);
+imshow(I3)
+title("Modified Regional Maxima Superimposed on Original Image")
+
+%%
+figure, 
+bw = imbinarize(Iobrcbr);
+bw2 = imerode(bw,se2);
+
+imshow(bw2)
+title("Thresholded Opening-Closing by Reconstruction")
+
+figure, 
+D = bwdist(bw2);
+DL = watershed(D);
+bgm = DL == 0;
+imshow(bgm)
+title("Watershed Ridge Lines")
+%%
+figure, 
+gmag2 = imimposemin(gmag, bgm | fgm4);
+L = watershed(gmag2);
+imshow(L, [])
+
+figure, 
+labels = imdilate(L==0,ones(3,3)) + 2*bgm + 3*fgm4;
+I4 = labeloverlay(input,labels);
+imshow(I4)
+title("Markers and Object Boundaries Superimposed on Original Image")
+
+figure, 
+Lrgb = label2rgb(L, "jet","w","shuffle");
+imshow(Lrgb)
+title("Colored Watershed Label Matrix")
+
+figure, 
+output = im2gray(Lrgb);
+imshow(output, [])
+
 %% Remove high saturation regions
 close all; 
 input = medS;
-test = imhmin(input, 0.40, 4);
+test = imhmin(input, 0.40, 8);
 figure, 
 imshow(test, [])
 
 log_faces_mask = test < 0.76 & test > 0.40;
 figure("Name", "Log Faces Mask")
 imshowpair(log_faces_mask, test, 'montage')
-figure("Name", "Clean up mask")
-% cleanup = imerode(log_faces_mask, strel('disk', 10, 8));
-% cleanup = bwmorph(log_faces_mask, 'majority', Inf);
-cleanup = bwmorph(log_faces_mask, "close", 10);
 
-imshow(cleanup, [])
-
-%% Apply distance transform on faces 
+%% Apply distance transform on log faces 
 close all; 
 input = cleanup; 
 D = bwdist(~input);
@@ -81,24 +153,20 @@ imshow(mask, []), title("Labels")
 figure, 
 imshow(mask, [])
 
-%% Edges
-border = edge(cleanupMask, "canny", [0.5 0.9], 1.5);
-figure, 
-imshow(border, [])
-
-%% Find circles in 
+%% Find circles
 close all; 
-input = mask; 
-[c, r, metric] = imfindcircles(input, [90 170], "Method", "TwoStage", "Sensitivity", 0.96);
+input2 = bw2; 
+[c, r, metric] = imfindcircles(input2, [90 170], "ObjectPolarity","bright", "Method", "TwoStage", "Sensitivity", 0.97);
+fprintf("Preliminary Number of circles found %d\n", size(c, 1))
 
+%%
+strongMetric = metric > 0.04;
+strongC = c(strongMetric, :);
+strongR = r(strongMetric);
 
-%% PostProcessing
-strongMetric = metric > 0.05;
-c = c(strongMetric, :);
-r = r(strongMetric);
+fprintf("Number of circles found %d\n", size(c, 1))
 
-circs = size(c, 1);
-fprintf("Number of circles found %d\n", circs)
 figure("Name", "Final Output")
-imshow(input, [])
-viscircles(c, r);
+imshow(I, [])
+viscircles(strongC, strongR);
+viscircles(c(~strongMetric, :), r(~strongMetric), "Color","blue")

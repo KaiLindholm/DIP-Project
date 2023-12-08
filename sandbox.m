@@ -1,7 +1,9 @@
 close all; 
 I = imread("woodlogs_b.png");
-figure("Name", "Original Image") 
-imshow(I, [])
+
+% figure("Name", "Original Image") 
+% imshow(I, [])
+
 R = I(:,:,1);
 G = I(:,:,2);
 B = I(:,:,3);
@@ -47,14 +49,9 @@ subplot(1,2,2); imshow(medS, [])
 %% Morphological Techniques to mark foreground objects 
 close all; 
 input = histeq(medS);
-% 
-% figure, 
-% gmag = imgradient(input);
-% imshow(gmag,[])
-% title("Gradient Magnitude")
 
 figure, 
-se = strel("disk", 25);
+se = strel("disk", 30);
 Ie = imerode(input,se);
 Iobr = imreconstruct(Ie,input);
 imshow(Iobr)
@@ -66,34 +63,23 @@ Iobrcbr = imreconstruct(imcomplement(Iobrd),imcomplement(Iobr));
 Iobrcbr = imcomplement(Iobrcbr);
 imshow(Iobrcbr)
 title("Opening-Closing by Reconstruction")
+%%
 
-figure, 
-fgm = imregionalmax(Iobrcbr, 8);
-imshow(fgm)
-title("Regional Maxima of Opening-Closing by Reconstruction")
-
-se2 = strel(ones(11, 11));
-fgm2 = imclose(fgm,se2);
-fgm3 = imerode(fgm2,se2);
-
-figure, 
-fgm4 = bwareaopen(fgm3,90);
-I3 = labeloverlay(input,fgm4);
-imshow(I3)
-title("Modified Regional Maxima Superimposed on Original Image")
+filtered = imgaussfilt(Iobrd, 0.5, "FilterSize", [3 3]);
+imshow(filtered, [])
 
 %%
 figure, 
-bw = Iobrcbr > 0.60;
+bw = Iobrcbr > 0.65;
 bw2 = imerode(bw,se2);
 
-imshow(bw2)
+imshow(bw)
 title("Thresholded Opening-Closing by Reconstruction")
 
 %% Find circles
 close all; 
-input2 = bw2; 
-[c, r, metric] = imfindcircles(input2, [90 170], "ObjectPolarity","bright", "Method", "TwoStage", "Sensitivity", 0.96);
+input2 = bw; 
+[c, r, metric] = imfindcircles(input2, [75 180], "ObjectPolarity","bright", "Method", "TwoStage", "Sensitivity", 0.96);
 fprintf("Preliminary Number of circles found %d\n", size(c, 1))
 
 %%
@@ -104,6 +90,6 @@ strongR = r(strongMetric);
 fprintf("Number of circles found %d\n", size(c, 1))
 
 figure("Name", "Final Output")
-imshow(I, [])
+imshow(input2, [])
 viscircles(strongC, strongR);
 viscircles(c(~strongMetric, :), r(~strongMetric), "Color","blue")

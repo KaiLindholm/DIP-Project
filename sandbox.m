@@ -41,17 +41,17 @@ medS = imgaussfilt(medS, 1.5, "FilterSize", [5 5]);
 imshow(medS, [])
 
 figure("Name", "Saturation Histogram")
-subplot(1,2,1); imhist(medS, 20);
+subplot(1,2,1); imhist(medS);
 subplot(1,2,2); imshow(medS, [])
 
 %% Morphological Techniques to mark foreground objects 
 close all; 
 input = histeq(medS);
-
-figure, 
-gmag = imgradient(input);
-imshow(gmag,[])
-title("Gradient Magnitude")
+% 
+% figure, 
+% gmag = imgradient(input);
+% imshow(gmag,[])
+% title("Gradient Magnitude")
 
 figure, 
 se = strel("disk",25);
@@ -72,12 +72,6 @@ fgm = imregionalmax(Iobrcbr, 8);
 imshow(fgm)
 title("Regional Maxima of Opening-Closing by Reconstruction")
 
-
-figure, 
-I2 = labeloverlay(input,fgm);
-imshow(I2)
-title("Regional Maxima Superimposed on Original Image")
-%%
 se2 = strel(ones(11, 11));
 fgm2 = imclose(fgm,se2);
 fgm3 = imerode(fgm2,se2);
@@ -90,73 +84,16 @@ title("Modified Regional Maxima Superimposed on Original Image")
 
 %%
 figure, 
-bw = imbinarize(Iobrcbr);
+bw = Iobrcbr > 0.60;
 bw2 = imerode(bw,se2);
 
 imshow(bw2)
 title("Thresholded Opening-Closing by Reconstruction")
 
-figure, 
-D = bwdist(bw2);
-DL = watershed(D);
-bgm = DL == 0;
-imshow(bgm)
-title("Watershed Ridge Lines")
-%%
-figure, 
-gmag2 = imimposemin(gmag, bgm | fgm4);
-L = watershed(gmag2);
-imshow(L, [])
-
-figure, 
-labels = imdilate(L==0,ones(3,3)) + 2*bgm + 3*fgm4;
-I4 = labeloverlay(input,labels);
-imshow(I4)
-title("Markers and Object Boundaries Superimposed on Original Image")
-
-figure, 
-Lrgb = label2rgb(L, "jet","w","shuffle");
-imshow(Lrgb)
-title("Colored Watershed Label Matrix")
-
-figure, 
-output = im2gray(Lrgb);
-imshow(output, [])
-
-%% Remove high saturation regions
-close all; 
-input = medS;
-test = imhmin(input, 0.40, 8);
-figure, 
-imshow(test, [])
-
-log_faces_mask = test < 0.76 & test > 0.40;
-figure("Name", "Log Faces Mask")
-imshowpair(log_faces_mask, test, 'montage')
-
-%% Apply distance transform on log faces 
-close all; 
-input = cleanup; 
-D = bwdist(~input);
-figure("Name", "Distance Transform")
-subplot(1,2,1); imshow(D, []), title("Distance Transform")
-D = -D; 
-subplot(1,2,2); imshow(D, []), title("Compliment of Distance Transform")
-
-labels = watershed(D);
-labels(~input) = 0; 
-
-mask = labels > 0; 
-figure("Name", "Gray Labels")
-imshow(mask, []), title("Labels")
-
-figure, 
-imshow(mask, [])
-
 %% Find circles
 close all; 
 input2 = bw2; 
-[c, r, metric] = imfindcircles(input2, [90 170], "ObjectPolarity","bright", "Method", "TwoStage", "Sensitivity", 0.97);
+[c, r, metric] = imfindcircles(input2, [90 170], "ObjectPolarity","bright", "Method", "TwoStage", "Sensitivity", 0.96);
 fprintf("Preliminary Number of circles found %d\n", size(c, 1))
 
 %%

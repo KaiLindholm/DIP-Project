@@ -54,7 +54,7 @@ input = histeq(medS);
 % title("Gradient Magnitude")
 
 figure, 
-se = strel("disk",25);
+se = strel("disk", 25);
 Ie = imerode(input,se);
 Iobr = imreconstruct(Ie,input);
 imshow(Iobr)

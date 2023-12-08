@@ -70,7 +70,8 @@ imshow(filtered, [])
 
 %%
 figure, 
-bw = Iobrcbr > 0.65;
+bw = Iobrcbr > 0.63;
+se2 = strel(ones(11, 11));
 bw2 = imerode(bw,se2);
 
 imshow(bw)
@@ -79,7 +80,7 @@ title("Thresholded Opening-Closing by Reconstruction")
 %% Find circles
 close all; 
 input2 = bw; 
-[c, r, metric] = imfindcircles(input2, [75 180], "ObjectPolarity","bright", "Method", "TwoStage", "Sensitivity", 0.96);
+[c, r, metric] = imfindcircles(input2, [90 180], "ObjectPolarity","bright", "Method", "TwoStage", "Sensitivity", 0.965);
 fprintf("Preliminary Number of circles found %d\n", size(c, 1))
 
 %%
@@ -90,6 +91,6 @@ strongR = r(strongMetric);
 fprintf("Number of circles found %d\n", size(c, 1))
 
 figure("Name", "Final Output")
-imshow(input2, [])
+imshow(I, [])
 viscircles(strongC, strongR);
 viscircles(c(~strongMetric, :), r(~strongMetric), "Color","blue")

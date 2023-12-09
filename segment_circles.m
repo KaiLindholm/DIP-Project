@@ -63,8 +63,8 @@ Iobrcbr = imreconstruct(imcomplement(Iobrd),imcomplement(Iobr));
 Iobrcbr = imcomplement(Iobrcbr);
 imshow(Iobrcbr)
 title("Opening-Closing by Reconstruction")
-%%
 
+%%
 filtered = imgaussfilt(Iobrd, 0.5, "FilterSize", [3 3]);
 imshow(filtered, [])
 
@@ -80,11 +80,12 @@ title("Thresholded Opening-Closing by Reconstruction")
 %% Find circles
 close all; 
 input2 = bw; 
-[c, r, metric] = imfindcircles(input2, [90 180], "ObjectPolarity","bright", "Method", "TwoStage", "Sensitivity", 0.965);
+[c, r, metric] = imfindcircles(input2, [90 180], "ObjectPolarity", "bright", "Method", "TwoStage", "Sensitivity", 0.968);
 fprintf("Preliminary Number of circles found %d\n", size(c, 1))
 
 %%
-strongMetric = metric > 0.04;
+
+strongMetric = metric > 0.033;
 strongC = c(strongMetric, :);
 strongR = r(strongMetric);
 
@@ -93,4 +94,11 @@ fprintf("Number of circles found %d\n", size(c, 1))
 figure("Name", "Final Output")
 imshow(I, [])
 viscircles(strongC, strongR);
-viscircles(c(~strongMetric, :), r(~strongMetric), "Color","blue")
+viscircles(c(~strongMetric, :), r(~strongMetric), "Color", "blue")
+
+points = zeros(size(c,1), 4);
+for i=1:size(c,1)
+    points(i,:) = [i, c(i,:), r(i)];
+end
+
+writematrix(points, 'g1_part1.csv')

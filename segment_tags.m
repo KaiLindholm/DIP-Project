@@ -1,7 +1,7 @@
 % Read the image
 close all; 
 
-I = imread('tags/target_tag_8.jpg');
+I = imread('tags/target_tag_1.jpg');
 imshow(I, [])
 
 %%
@@ -40,7 +40,7 @@ imshow(erode, [])
 input = erode; 
 median = medfilt2(input, [50 5]); 
 % finalImg = histeq(median);
-finalImg = median > 218  & median < 256; 
+finalImg = median > 218 & median < 256; 
 
 figure("Name", "Median Filtering")
 imshow(median, [])
@@ -49,7 +49,7 @@ imshow(median, [])
 figure("Name", "Thresholding")
 imshow(finalImg, [])
 
-%%
+%% Find and filter regionprops
 input = finalImg;
 stats = regionprops(input, 'Area', 'BoundingBox', 'Extent', 'Eccentricity', 'Circularity');
 figure("Name", "Stats")
@@ -72,15 +72,16 @@ end             % find all aspect ratios
 
 % Filter Extent and Area 
 areaThresLow = 10000; 
-filteredRegions = stats([stats.Area] > areaThresLow);          % remove all very small regions
+filteredRegions = stats([stats.Area] > areaThresLow); 
 
-extentThres = 0.63;
-filteredRegions = filteredRegions([filteredRegions.Extent] > extentThres);  % remove regions that have low extent
+% We want the number of active pixels in the region to be high 
+extentThres = 0.63; 
+filteredRegions = filteredRegions([filteredRegions.Extent] > extentThres); 
 
-eccThresh = 0.88;   % we want to have high ecc
+% We want to allow for the 
+eccThresh = 0.88;
 filteredRegions = filteredRegions([filteredRegions.Eccentricity] > eccThresh);
-
-circThres = 0.55;   % 
+circThres = 0.55; 
 filteredRegions = filteredRegions([filteredRegions.Circularity] > circThres);
 
 aspectRatiosFiltered = zeros(size(filteredRegions)); % Preallocate an array for aspect ratios
@@ -101,18 +102,19 @@ aspectMask = aspectRatiosFiltered > lowAspect & aspectRatiosFiltered < highAspec
 finalAR = aspectRatiosFiltered(aspectMask);
 finalTags = filteredRegions(aspectMask);
 
-%%
-% Filter regions based on properties (e.g., area)
-
-% Extract or overlay bounding boxes on original image
-
+%% Display Final borders
 figure("Name", "Final Labeling")
 imshow(input, []);
 hold on;
+
 regions = finalTags; 
 aspects = finalAR; 
+% store data for bounding boxes X1 Y1 and X2 Y2
+points = zeros(size(regions,1), 6);
+
 for i = 1:numel(regions)
     bb = regions(i).BoundingBox; 
+    points(i, :) = [i, bb(1), bb(2), bb(1) + bb(3), bb(2) + bb(4), 1];
     AR = aspects(i);
     area = regions(i).Area;
     ext = regions(i).Extent;
@@ -121,11 +123,13 @@ for i = 1:numel(regions)
 
     rectangle('Position', bb, 'EdgeColor', 'r', 'LineWidth', 2);
 
-    disp(fprintf("Aspect Ratio: %.2f\n"    + ...
+    fprintf("Aspect Ratio: %.2f\n"    + ...
                 "Extent: %.2f\n"         + ...
                 "Circularity: %0.2f\n"+ ...
                 "Area: %0.2f\n" + ...
-                "Eccentricity: %0.2f\n", AR, ext, circ, area, ecc));
+                "Eccentricity: %0.2f\n", AR, ext, circ, area, ecc);
     disp("---");
 end
 hold off 
+fprintf("The number of tags: %d\n", numel(regions))
+writematrix(points, 'g1_part2.csv')

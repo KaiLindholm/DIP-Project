@@ -1,104 +1,131 @@
 % Read the image
 close all; 
 
-I = imread('tags/target_tag_7.jpg');
-I = imrotate(I, -90);
+I = imread('tags/target_tag_8.jpg');
 imshow(I, [])
+
 %%
-figure, 
+figure("Name", "Gray Value Image")
 % Convert to grayscale
 grayImg = rgb2gray(I);
-enhancedImg = histeq(grayImg);
-subplot(1,2,1); imshow(grayImg);
-subplot(1,2,2); imshow(enhancedImg);
-
-% % Thresholding
-% binaryImg = imbinarize(enhancedImg);
-% figure, imshow(binaryImg)
+subplot(1,2,1);imshow(grayImg);
+subplot(1,2,2); imshow(I, [])
 
 %% Morphological operations (dilation and erosion)
-input = enhancedImg;
+input = grayImg;
 se = strel('rectangle', [20 60]); % Define structuring element
 
-figure, 
+figure("Name", "Opening")
 Ie = imerode(input,se);
 Iobr = imreconstruct(Ie,input);
 imshow(Iobr)
 title("Opening-by-Reconstruction")
 
-figure, 
+figure("Name", "Opening-Closing")
 Iobrd = imdilate(Iobr,se);
 Iobrcbr = imreconstruct(imcomplement(Iobrd),imcomplement(Iobr));
 Iobrcbr = imcomplement(Iobrcbr);
+Iobrcbr = histeq(Iobrcbr);
 imshow(Iobrcbr)
 title("Opening-Closing by Reconstruction")
 
-% figure, 
-% fgm = imregionalmax(Iobrcbr, 8);
-% imshow(fgm)
-% title("Regional Maxima of Opening-Closing by Reconstruction")
-% 
-% 
-% figure, 
-% I2 = labeloverlay(input,fgm);
-% imshow(I2)
-% title("Regional Maxima Superimposed on Original Image")
+se2 = strel('rectangle', [20 20]);
+erode = imerode(Iobrcbr, se2);
+erode = imdilate(erode, se2);
 
-% dilatedImg = imdilate(enhancedImg, se);
-% finalImg = imerode(enhancedImg, se);
+figure("Name", "Final erosion")
+imshow(erode, [])
 
 %%
-input = Iobrcbr; 
+input = erode; 
+median = medfilt2(input, [50 5]); 
+% finalImg = histeq(median);
+finalImg = median > 218  & median < 256; 
 
-% finalImg = histeq(input);
-figure, 
-subplot(1,2,1), imshow(input, [])
+figure("Name", "Median Filtering")
+imshow(median, [])
 
-finalImg = input > 218  & input < 255; 
 
-subplot(1,2,2); imshow(finalImg, [])
+figure("Name", "Thresholding")
+imshow(finalImg, [])
 
 %%
-input = logical(finalImg);
-stats = regionprops(input, 'Area', 'BoundingBox', 'Extent');
+input = finalImg;
+stats = regionprops(input, 'Area', 'BoundingBox', 'Extent', 'Eccentricity', 'Circularity');
+figure("Name", "Stats")
+fields = fieldnames(stats); 
+for i=1:numel(fields)
+    statName = fields{i};
+    subplot(1,numel(fields),i), histogram([stats.(statName)]);
+    title(sprintf(statName))
+end
 
+aspectRatios = zeros(size(stats)); % Preallocate an array for aspect ratios
+numRegions = size(stats, 1);
 
-extentThres = 0.45;
-areaThres = 500; 
-filteredRegions = stats([stats.Extent] > extentThres);
-filteredRegions = filteredRegions([filteredRegions.Area] > areaThres);
+for k = 1:numRegions
+    boundingBox = stats(k).BoundingBox; % Get the bounding box of each region
+    width = boundingBox(3); % Width is the 3rd element of BoundingBox
+    height = boundingBox(4); % Height is the 4th element of BoundingBox
+    aspectRatios(k) = width / height; % Calculate aspect ratio
+end             % find all aspect ratios 
 
-aspectRatios = zeros(size(filteredRegions)); % Preallocate an array for aspect ratios
-numRegions = size(aspectRatios, 1);
+% Filter Extent and Area 
+areaThresLow = 10000; 
+filteredRegions = stats([stats.Area] > areaThresLow);          % remove all very small regions
+
+extentThres = 0.63;
+filteredRegions = filteredRegions([filteredRegions.Extent] > extentThres);  % remove regions that have low extent
+
+eccThresh = 0.88;   % we want to have high ecc
+filteredRegions = filteredRegions([filteredRegions.Eccentricity] > eccThresh);
+
+circThres = 0.55;   % 
+filteredRegions = filteredRegions([filteredRegions.Circularity] > circThres);
+
+aspectRatiosFiltered = zeros(size(filteredRegions)); % Preallocate an array for aspect ratios
+numRegions = size(aspectRatiosFiltered, 1);
 
 for k = 1:numRegions
     boundingBox = filteredRegions(k).BoundingBox; % Get the bounding box of each region
     width = boundingBox(3); % Width is the 3rd element of BoundingBox
     height = boundingBox(4); % Height is the 4th element of BoundingBox
-    aspectRatios(k) = width / height; % Calculate aspect ratio
-end
+    aspectRatiosFiltered(k) = width / height; % Calculate aspect ratio
+end    % find all aspect ratios 
 
-highAspect = 8; 
-lowAspect = 1.5;
+% filter Aspect Ratios
+highAspect = 2.75; 
+lowAspect = 1.90;
 
-aspectMask = aspectRatios > lowAspect & aspectRatios < highAspect; 
+aspectMask = aspectRatiosFiltered > lowAspect & aspectRatiosFiltered < highAspect; 
+finalAR = aspectRatiosFiltered(aspectMask);
 finalTags = filteredRegions(aspectMask);
-figure, 
-histogram(aspectMask);
-
-finalTags = finalTags([finalTags.Extent] > extentThres);
-figure, 
-histogram([finalTags.Extent])
 
 %%
 % Filter regions based on properties (e.g., area)
 
 % Extract or overlay bounding boxes on original image
-figure, 
-imshow(I, []);
+
+figure("Name", "Final Labeling")
+imshow(input, []);
 hold on;
-for i = 1:numel(finalTags)
-    rectangle('Position', finalTags(i).BoundingBox, 'EdgeColor', 'r', 'LineWidth', 2);
-    fprintf("Aspect Ratio: %.2f\t Area: %d\n Extent: %.2f\n", aspectRatios(i), finalTags(i).Area, finalTags(i).Extent)
-    pause
+regions = finalTags; 
+aspects = finalAR; 
+for i = 1:numel(regions)
+    bb = regions(i).BoundingBox; 
+    AR = aspects(i);
+    area = regions(i).Area;
+    ext = regions(i).Extent;
+    circ = regions(i).Circularity;
+    ecc = regions(i).Eccentricity; 
+
+    rectangle('Position', bb, 'EdgeColor', 'r', 'LineWidth', 2);
+
+    disp(fprintf("Aspect Ratio: %.2f\n"    + ...
+                "Extent: %.2f\n"         + ...
+                "Circularity: %0.2f\n"+ ...
+                "Area: %0.2f\n" + ...
+                "Eccentricity: %0.2f\n", AR, ext, circ, area, ecc));
+    disp("---");
 end
+hold off 

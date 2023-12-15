@@ -66,8 +66,8 @@ for i=1:numel(fields)
     subplot(1,numel(fields),i), histogram([stats.(statName)]);
     title(sprintf(statName))
 end
-close all
 
+close all
 aspectRatios = zeros(size(stats)); % Preallocate an array for aspect ratios
 numRegions = size(stats, 1);
 
@@ -132,24 +132,32 @@ if aspectMask == aspectMask2
     top = filteredImg < 215 & filteredImg > 90;
     % top = uint8(top) .* grayImg;
     top = imfilter(top, h);
-    top = medfilt2(top, [3 10]);
+    top = medfilt2(top, [5 10]);
     top = bwareaopen(top, 200);
     top = imfill(top, "holes");
 
     bottom = filteredImg > 215;
     % bottom = uint8(bottom) .* grayImg;
     bottom = imfilter(bottom, h);
-    bottom = medfilt2(bottom, [3 10]);
+    bottom = medfilt2(bottom, [5 10]);
     bottom = bwareaopen(bottom, 200);
     bottom = imfill(bottom, "holes");
 
-    stats_top = regionprops(top, "BoundingBox");
+    stats_top = regionprops(top, "BoundingBox", "Area", 'Extent', 'Eccentricity', 'Circularity');
+    stats_top = stats_top([stats_top.Area] > 1000);
+    stats_top = stats_top([stats_top.Extent] > 0.6);
+    stats_top = stats_top([stats_top.Eccentricity] > 0.6);
+    stats_top = stats_top([stats_top.Circularity] > 0.6);
+
+    
+
     stats_bottom = regionprops(bottom, "BoundingBox");
 
     imshow(I, []);
     hold on
     for k = 1:length(stats_top)
         thisBB = stats_top(k).BoundingBox;
+
         rectangle('Position', thisBB, ...
               'EdgeColor', 'g', 'LineWidth', 2);
     end

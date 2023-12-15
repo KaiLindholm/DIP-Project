@@ -123,10 +123,37 @@ end
 finalAR = aspectRatiosFiltered(aspectMask);
 finalTags = filteredRegions(aspectMask);
 
-if apspectMask = aspectMask2
+if aspectMask == aspectMask2
+    filteredImg = uint8(input) .*grayImg;
+    % filteredImg = histeq(filteredImg);
+
+    h = fspecial("gaussian", [5 5], 2);
+   
+    top = filteredImg < 215 & filteredImg > 90;
+    top = uint8(top) .* grayImg;
+    top = imfilter(top, h);
+    top = medfilt2(top, [3 10]);
+
+    bottom = filteredImg > 215;
+    bottom = uint8(bottom) .* grayImg;
+    bottom = imfilter(bottom, h);
+    bottom = medfilt2(bottom, [3 10]);
+
+    
+    
+
+end
+
+figure(8)
+subplot(1,3,1)
+imshow(filteredImg); impixelinfo
+subplot(1,3,2); imshow(top); xlabel('top')
+subplot(1,3,3); imshow(bottom); xlabel('bottom')
+
+
 
 %% Display Final borders
-figure(8)
+figure(9)
 set(gcf, "Name", "Final Labeling")
 imshow(input, []);
 hold on;

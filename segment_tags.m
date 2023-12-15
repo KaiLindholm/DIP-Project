@@ -130,17 +130,40 @@ if aspectMask == aspectMask2
     h = fspecial("gaussian", [5 5], 2);
    
     top = filteredImg < 215 & filteredImg > 90;
-    top = uint8(top) .* grayImg;
+    % top = uint8(top) .* grayImg;
     top = imfilter(top, h);
     top = medfilt2(top, [3 10]);
+    top = bwareaopen(top, 200);
+    top = imfill(top, "holes");
 
     bottom = filteredImg > 215;
-    bottom = uint8(bottom) .* grayImg;
+    % bottom = uint8(bottom) .* grayImg;
     bottom = imfilter(bottom, h);
     bottom = medfilt2(bottom, [3 10]);
+    bottom = bwareaopen(bottom, 200);
+    bottom = imfill(bottom, "holes");
 
-    
-    
+    stats_top = regionprops(top, "BoundingBox");
+    stats_bottom = regionprops(bottom, "BoundingBox");
+
+    imshow(I, []);
+    hold on
+    for k = 1:length(stats_top)
+        thisBB = stats_top(k).BoundingBox;
+        rectangle('Position', thisBB, ...
+              'EdgeColor', 'g', 'LineWidth', 2);
+    end
+
+    for k = 1:length(stats_bottom)
+        thisBB = stats_bottom(k).BoundingBox;
+        rectangle('Position', thisBB, ...
+              'EdgeColor', 'r', 'LineWidth', 2);
+    end
+
+    hold off
+
+               
+  
 
 end
 

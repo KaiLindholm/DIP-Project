@@ -1,11 +1,12 @@
 % Read the image
 close all; 
 
-I = imread('tags/target_tag_1.jpg');
+I = imread('tags/ptag_b.png');
 imshow(I, [])
 
 %%
-figure("Name", "Gray Value Image")
+figure(1)
+set(gcf, "Name", "Gray Value Image")
 % Convert to grayscale
 grayImg = rgb2gray(I);
 subplot(1,2,1);imshow(grayImg);
@@ -15,13 +16,15 @@ subplot(1,2,2); imshow(I, [])
 input = grayImg;
 se = strel('rectangle', [20 60]); % Define structuring element
 
-figure("Name", "Opening")
+figure(2)
+set(gcf, "Name", "Opening")
 Ie = imerode(input,se);
 Iobr = imreconstruct(Ie,input);
 imshow(Iobr)
 title("Opening-by-Reconstruction")
 
-figure("Name", "Opening-Closing")
+figure(3)
+set(gcf, "Name", "Opening-Closing")
 Iobrd = imdilate(Iobr,se);
 Iobrcbr = imreconstruct(imcomplement(Iobrd),imcomplement(Iobr));
 Iobrcbr = imcomplement(Iobrcbr);
@@ -33,7 +36,8 @@ se2 = strel('rectangle', [20 20]);
 erode = imerode(Iobrcbr, se2);
 erode = imdilate(erode, se2);
 
-figure("Name", "Final erosion")
+figure(4)
+set(gcf, "Name", "Final erosion")
 imshow(erode, [])
 
 %%
@@ -42,23 +46,27 @@ median = medfilt2(input, [50 5]);
 % finalImg = histeq(median);
 finalImg = median > 218 & median < 256; 
 
-figure("Name", "Median Filtering")
+figure(5)
+set(gcf, "Name", "Median Filtering")
 imshow(median, [])
 
 
-figure("Name", "Thresholding")
+figure(6)
+set(gcf, "Name", "Thresholding")
 imshow(finalImg, [])
 
 %% Find and filter regionprops
 input = finalImg;
 stats = regionprops(input, 'Area', 'BoundingBox', 'Extent', 'Eccentricity', 'Circularity');
-figure("Name", "Stats")
+figure(7)
+set(gcf, "Name", "Stats")
 fields = fieldnames(stats); 
 for i=1:numel(fields)
     statName = fields{i};
     subplot(1,numel(fields),i), histogram([stats.(statName)]);
     title(sprintf(statName))
 end
+close all
 
 aspectRatios = zeros(size(stats)); % Preallocate an array for aspect ratios
 numRegions = size(stats, 1);
@@ -75,13 +83,13 @@ areaThresLow = 10000;
 filteredRegions = stats([stats.Area] > areaThresLow); 
 
 % We want the number of active pixels in the region to be high 
-extentThres = 0.63; 
+extentThres = 0.6; 
 filteredRegions = filteredRegions([filteredRegions.Extent] > extentThres); 
 
 % We want to allow for the 
-eccThresh = 0.88;
+eccThresh = 0.6;
 filteredRegions = filteredRegions([filteredRegions.Eccentricity] > eccThresh);
-circThres = 0.55; 
+circThres = 0.6; 
 filteredRegions = filteredRegions([filteredRegions.Circularity] > circThres);
 
 aspectRatiosFiltered = zeros(size(filteredRegions)); % Preallocate an array for aspect ratios
@@ -98,12 +106,28 @@ end    % find all aspect ratios
 highAspect = 2.75; 
 lowAspect = 1.90;
 
-aspectMask = aspectRatiosFiltered > lowAspect & aspectRatiosFiltered < highAspect; 
+aspectMask1 = aspectRatiosFiltered > lowAspect & aspectRatiosFiltered < highAspect;
+
+
+
+highAspect = 1.5; 
+lowAspect = 0.8;
+
+
+aspectMask2 = aspectRatiosFiltered > lowAspect & aspectRatiosFiltered < highAspect; 
+if (size(aspectMask1, 1) > size(aspectMask2, 1))
+    aspectMask = aspectMask1;
+else
+    aspectMask = aspectMask2;
+end
 finalAR = aspectRatiosFiltered(aspectMask);
 finalTags = filteredRegions(aspectMask);
 
+if apspectMask = aspectMask2
+
 %% Display Final borders
-figure("Name", "Final Labeling")
+figure(8)
+set(gcf, "Name", "Final Labeling")
 imshow(input, []);
 hold on;
 

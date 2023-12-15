@@ -58,16 +58,16 @@ imshow(finalImg, [])
 %% Find and filter regionprops
 input = finalImg;
 stats = regionprops(input, 'Area', 'BoundingBox', 'Extent', 'Eccentricity', 'Circularity');
-figure(7)
-set(gcf, "Name", "Stats")
-fields = fieldnames(stats); 
-for i=1:numel(fields)
-    statName = fields{i};
-    subplot(1,numel(fields),i), histogram([stats.(statName)]);
-    title(sprintf(statName))
-end
+% figure(7)
+% set(gcf, "Name", "Stats")
+% fields = fieldnames(stats); 
+% for i=1:numel(fields)
+%     statName = fields{i};
+%     subplot(1,numel(fields),i), histogram([stats.(statName)]);
+%     title(sprintf(statName))
+% end
 
-close all
+% hold off
 aspectRatios = zeros(size(stats)); % Preallocate an array for aspect ratios
 numRegions = size(stats, 1);
 
@@ -124,6 +124,11 @@ finalAR = aspectRatiosFiltered(aspectMask);
 finalTags = filteredRegions(aspectMask);
 
 if aspectMask == aspectMask2
+
+    imshow(I, []);
+    hold on
+
+
     filteredImg = uint8(input) .*grayImg;
     % filteredImg = histeq(filteredImg);
 
@@ -149,18 +154,48 @@ if aspectMask == aspectMask2
     stats_top = stats_top([stats_top.Eccentricity] > 0.6);
     stats_top = stats_top([stats_top.Circularity] > 0.6);
 
+    aspectRatiosFiltered1 = zeros(size(stats_top)); % Preallocate an array for aspect ratios
+    numRegions = size(aspectRatiosFiltered, 1);
+
+    for k = 1:size(stats_top, 1)
+        boundingBox = stats_top(k).BoundingBox; % Get the bounding box of each region
+        width = boundingBox(3); % Width is the 3rd element of BoundingBox
+        height = boundingBox(4); % Height is the 4th element of BoundingBox
+        aspectRatiosFiltered1(k) = width / height; % Calculate aspect ratio
+    end    % find 
+
+    highAspect = 2.75; 
+    lowAspect = 1.90;
+
+    aspectMask1 = aspectRatiosFiltered1 > lowAspect & aspectRatiosFiltered1 < highAspect;
+
+    finalAR1 = aspectRatiosFiltered1(aspectMask1);
+    finalTags1 = stats_top(aspectMask1);
+    regions1 = finalTags1; 
+    aspects1 = finalAR1; 
+    % store data for bounding boxes X1 Y1 and X2 Y2
+    points1 = zeros(size(regions1,1), 6);
+
+    for i = 1:numel(regions1)
+        bb1 = regions1(i).BoundingBox; 
+        points1(i, :) = [i, bb1(1), bb1(2), bb1(1) + bb1(3), bb1(2) + bb1(4), 1];
+        AR = aspects1(i);
+        area = regions1(i).Area;
+        ext = regions1(i).Extent;
+        circ = regions1(i).Circularity;
+        ecc = regions1(i).Eccentricity; 
+        rectangle('Position', bb1, ...
+              'EdgeColor', 'g', 'LineWidth', 2);
+
+        hold off
+    end
+    
+
+    
+
     
 
     stats_bottom = regionprops(bottom, "BoundingBox");
-
-    imshow(I, []);
-    hold on
-    for k = 1:length(stats_top)
-        thisBB = stats_top(k).BoundingBox;
-
-        rectangle('Position', thisBB, ...
-              'EdgeColor', 'g', 'LineWidth', 2);
-    end
 
     for k = 1:length(stats_bottom)
         thisBB = stats_bottom(k).BoundingBox;
